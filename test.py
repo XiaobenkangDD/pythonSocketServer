@@ -2,11 +2,27 @@
 '''
 SocketServer 支持多个客户端
 '''
-import SocketServer
-import thread
+import socketserver
+import _thread
 import time
 import struct
+import base64
 
+
+'''
+bytes to hex string 
+eg:
+b'\x01#Eg\x89\xab\xcd\xef\x01#Eg\x89\xab\xcd\xef'
+'01 23 45 67 89 AB CD EF 01 23 45 67 89 AB CD EF'
+'''
+def bytesToHexString(bs):
+    # hex_str = ''
+    # for item in bs:
+    #     hex_str += str(hex(item))[2:].zfill(2).upper() + " "
+    # return hex_str
+    result= ''.join(['%02X ' % b for b in bs])
+    result=result.replace(" ","")
+    return result
 
 class ClientSession():
   def __init__(self, address, serial, request):
@@ -23,7 +39,7 @@ def clientHeart(ip, heart):
 
 def dataSwitch(data):
     str1 = ''
-    str2 = ''
+    str2=bytes()
     data = data.replace(" ", "");
     while data:
         str1 = data[0:2]
@@ -32,7 +48,7 @@ def dataSwitch(data):
         data = data[2:]
     return str2
 
-class MyTCPHandler(SocketServer.BaseRequestHandler):
+class MyTCPHandler(socketserver.BaseRequestHandler):
     '''
     处理我们的socket，这个类必须继承socketserver.BaseRequestHandler
     并且实现里面的handler函数
@@ -49,8 +65,8 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
             try:
                 self.data = self.request.recv(1024).strip()
                 print("{} wrote:".format(self.client_address))  # 客户端地址
-                print(self.data.encode('hex'))
-                resultStr=self.data.encode('hex')
+                print(bytesToHexString(self.data))
+                resultStr=bytesToHexString(self.data)
                 if len(resultStr) == 6:
                     print(self.client_address[0]+" 的心跳包为: "+resultStr)
                     clientHeart(self.client_address,resultStr)
@@ -85,9 +101,9 @@ if __name__ == "__main__":
     list = []
     cmd1 = "02 03 00 07 00 03 B4 39"  # 获取字符测
     cmd = dataSwitch(cmd1);
-    thread.start_new_thread(collect, ())
+    _thread.start_new_thread(collect, ())
     # server = SocketServer.TCPServer((HOST,PORT),MyTCPHandler  #不支持多并发
-    server = SocketServer.ThreadingTCPServer((HOST, PORT), MyTCPHandler)  # 支持多线程，多并发
+    server = socketserver.ThreadingTCPServer((HOST, PORT), MyTCPHandler)  # 支持多线程，多并发
     # server = SocketServer.ForkingTCPServer((HOST, PORT), MyTCPHandler)  # 支持多进程，多并发，windows不能实现，linux上可以
     # server.allow_reuse_address() #解决 在 socketServer程序里面出现 地址已经被占用
     server.serve_forever()
