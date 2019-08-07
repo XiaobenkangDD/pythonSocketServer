@@ -1,1 +1,2 @@
 pythonSocketServer
+用于数据采集，设备以心跳包作为识别码
